@@ -54,7 +54,6 @@ function download_detail_multy_process (){
 		nb_processus=10
 		awk -vdir="${dir}/${d}/ALL/" 'BEGIN{FS="\t"}{print "if [ ! -s "dir"annonce_"$2".html ]; then url=\""$1"\"; output="dir"annonce_"$2".html;  download_pages ; fi"}' ${dir}/${d}/extract.tab  > ${dir}/${d}/wgets/wget_file.txt
 		nb=`wc -l-f  ${dir}/${d}/wgets/wget_file.txt | awk '{print $1}' `
-		nb=500
         let "split = (nb / nb_processus) + 1"
         split -l${split} -d ${dir}/${d}/wgets/wget_file.txt  ${dir}/${d}/wgets/wget_file.txt.
         i=0
