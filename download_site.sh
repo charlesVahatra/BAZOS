@@ -33,7 +33,6 @@ function download_pages () {
 
 function download_list_multy_process (){
 
-	nb_processus=5
 	awk 'BEGIN{FS="\t"}{print "if [ ! -s "$1" ]; then url=\""$2"\"; output="$1";  download_pages ; fi"}' ${list_file} > ${dir}/${d}/LISTING/${m_rep}/wget_file.txt
     nb=`wc -l ${dir}/${d}/LISTING/${m_rep}/wget_file.txt | awk '{print $1}' `
     let "split = (nb / nb_processus) + 1"
@@ -45,13 +44,11 @@ function download_list_multy_process (){
         . ${wget_file} >  ${dir}/${d}/LISTING/${m_rep}/LOG/log_${i} 2>&1 &
         let "i=i+1"
     done
-
-    wait
+	wait
 }
 
 function download_detail_multy_process (){
 		
-		nb_processus=10
 		awk -vdir="${dir}/${d}/ALL/" 'BEGIN{FS="\t"}{print "if [ ! -s "dir"annonce_"$2".html ]; then url=\""$1"\"; output="dir"annonce_"$2".html;  download_pages ; fi"}' ${dir}/${d}/extract.tab  > ${dir}/${d}/wgets/wget_file.txt
 		nb=`wc -l-f  ${dir}/${d}/wgets/wget_file.txt | awk '{print $1}' `
         let "split = (nb / nb_processus) + 1"
@@ -189,10 +186,9 @@ if [ ${get_list_ind} -eq 1 ]; then
 	echo "max_marques=${max_marque}"
 	
 	for (( marque=1 ; marque<=${max_marque}; marque++ ))
-	# for marque in 1 3
 	do 
 		m_rep=${marque_name[$marque]}
-		mkdir -p ${dir}/${d}/LISTING/${m_rep}  ${dir}/${d}/LISTING/${m_rep}/LOG 
+		mkdir -p ${dir}/${d}/LISTING/${m_rep}/LOG 
 
 		#https://auto.bazos.cz/bmw/
 		output=${dir}/${d}/LISTING/${m_rep}/page_0.html
@@ -200,24 +196,20 @@ if [ ${get_list_ind} -eq 1 ]; then
 		download_pages
 		
 		nb_site=$(awk -f ${dir}/nb_annonce.awk ${output})
-		echo "nombre_site=${nb_site}"
-		let "max_page=$nb_site/$nb_retrieve_per_page"
-		echo "max_page=${max_page}"
-		# Crawl page list
-		max_page=360
-		#####################
+		let "max_page=$nb_site"
+		
 		for (( page=20; page <= ${max_page}; page+=20 ))
 		do
 			url=https://auto.bazos.cz/${m_rep}/${page}/
 			output=${dir}/${d}/LISTING/${m_rep}/page-${page}.html
 			echo -e "${output}\t${url}" >> ${dir}/${d}/LISTING/${m_rep}/$$.wget_file
 		done
+		
 		list_file=${dir}/${d}/LISTING/${m_rep}/$$.wget_file
 		download_list_multy_process
-		
-		
+	
 		echo -e "parsing list" >> ${dir}/${d}/status  
-		find ${dir}/${d}/LISTING/${m_rep}/ -type f -name '*.html' -exec  awk -f ${dir}/liste_tab.awk -f ${dir}/put_html_into_tab.awk {} \; >>  ${dir}/${d}/LISTING/${m_rep}/${m_rep}.$$
+		find ${dir}/${d}/LISTING/${m_rep}/ -type f -name '*.html' -exec  awk -f ${dir}/liste_tab.awk -f ${dir}/put_html_into_tab.awk {} \; >  ${dir}/${d}/LISTING/${m_rep}/${m_rep}.$$
 		
 		# Log Par Marque
 		cat  ${dir}/${d}/LISTING/${m_rep}/${m_rep}.$$  | sort -u -k1,1 >  ${dir}/${d}/LISTING/${m_rep}/${m_rep}.tab
@@ -225,14 +217,13 @@ if [ ${get_list_ind} -eq 1 ]; then
 		cat  ${dir}/${d}/LISTING/${m_rep}/${m_rep}.tab  >> ${dir}/${d}/extract.$$
 		echo -e "${m_rep}\t${nb_site}\t${nb_observe}\tMARQUE"
 	done
-			
+	
 	cat ${dir}/${d}/extract.$$ | sort -u -k1,1 >  ${dir}/${d}/extract.tab
 	wait 
 	awk -vtable=${table} -f ${dir}/liste_tab.awk -f ${dir}/put_tab_into_db.awk  ${dir}/${d}/extract.tab > ${dir}/${d}/VO_ANNONCE_insert.sql 
 fi	
 
-# Telechargement fiches 
-if [ ${get_all_ind} -eq 1 ]; then
+if [ ${get_all_ind} -eq 2 ]; then
 		
 		mkdir -p ${dir}/${d}/wgets  
 		rm -f  ${dir}/${d}/wgets/wget_file.* 
